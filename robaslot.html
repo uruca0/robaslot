@@ -1,0 +1,775 @@
+!DOCTYPE html
+html lang=ja
+head
+meta charset=UTF-8
+meta name=viewport content=width=device-width, initial-scale=1.0
+titleROBAKUJI SLOTtitle
+style
+  @import url('httpsfonts.googleapis.comcss2family=Bebas+Neue&family=Noto+Sans+JPwght@400;700;900&display=swap');
+
+  root {
+    --bg #0a0a0f;
+    --panel #12121a;
+    --border #2a2a3a;
+    --gold #f5c842;
+    --gold2 #e8a020;
+    --red #ff3a3a;
+    --green #39ff8a;
+    --blue #3af0ff;
+    --text #f0f0f0;
+    --dim #666;
+    --reel-w 160px;
+    --reel-h 160px;
+  }
+
+   { margin 0; padding 0; box-sizing border-box; }
+
+  body {
+    background var(--bg);
+    color var(--text);
+    font-family 'Noto Sans JP', sans-serif;
+    min-height 100vh;
+    display flex;
+    flex-direction column;
+    align-items center;
+    justify-content center;
+    overflow-x hidden;
+  }
+
+   背景グリッド 
+  bodybefore {
+    content '';
+    position fixed;
+    inset 0;
+    background-image
+      linear-gradient(rgba(245,200,66,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(245,200,66,0.03) 1px, transparent 1px);
+    background-size 40px 40px;
+    pointer-events none;
+  }
+
+  h1 {
+    font-family 'Bebas Neue', cursive;
+    font-size clamp(2.5rem, 6vw, 4.5rem);
+    letter-spacing 0.15em;
+    background linear-gradient(135deg, var(--gold), var(--gold2), var(--gold));
+    -webkit-background-clip text;
+    -webkit-text-fill-color transparent;
+    background-clip text;
+    text-shadow none;
+    margin-bottom 4px;
+    filter drop-shadow(0 0 20px rgba(245,200,66,0.4));
+  }
+
+  .subtitle {
+    font-size 0.75rem;
+    letter-spacing 0.3em;
+    color var(--dim);
+    text-transform uppercase;
+    margin-bottom 32px;
+  }
+
+   コイン表示 
+  .coins-bar {
+    display flex;
+    align-items center;
+    gap 24px;
+    margin-bottom 24px;
+    background var(--panel);
+    border 1px solid var(--border);
+    border-radius 12px;
+    padding 12px 28px;
+  }
+
+  .coins-label {
+    font-size 0.7rem;
+    letter-spacing 0.2em;
+    color var(--dim);
+    text-transform uppercase;
+  }
+
+  .coins-value {
+    font-family 'Bebas Neue', cursive;
+    font-size 2rem;
+    color var(--gold);
+    letter-spacing 0.05em;
+    min-width 80px;
+    text-align right;
+    transition color 0.2s;
+  }
+
+  .coins-value.win { color var(--green); }
+  .coins-value.lose { color var(--red); }
+
+   スロット本体 
+  .machine {
+    background var(--panel);
+    border 1px solid var(--border);
+    border-radius 20px;
+    padding 32px;
+    box-shadow
+      0 0 0 1px rgba(245,200,66,0.1),
+      0 20px 60px rgba(0,0,0,0.6),
+      inset 0 1px 0 rgba(255,255,255,0.05);
+    position relative;
+  }
+
+   ライン装飾 
+  .machinebefore {
+    content '';
+    position absolute;
+    top -1px; left 20%; right 20%;
+    height 2px;
+    background linear-gradient(90deg, transparent, var(--gold), transparent);
+  }
+
+   リール群 
+  .reels {
+    display flex;
+    gap 12px;
+    margin-bottom 28px;
+    position relative;
+  }
+
+   当たりライン 
+  .win-line {
+    position absolute;
+    top 50%;
+    left -8px; right -8px;
+    height 2px;
+    background linear-gradient(90deg, transparent, var(--gold), transparent);
+    transform translateY(-50%);
+    opacity 0;
+    transition opacity 0.3s;
+    pointer-events none;
+  }
+  .win-line.show { opacity 1; }
+
+   リールコンテナ 
+  .reel-container {
+    width var(--reel-w);
+    height var(--reel-h);
+    border-radius 12px;
+    overflow hidden;
+    border 2px solid var(--border);
+    background #0d0d14;
+    position relative;
+    box-shadow inset 0 4px 20px rgba(0,0,0,0.5);
+  }
+
+  .reel-containerbefore,
+  .reel-containerafter {
+    content '';
+    position absolute;
+    left 0; right 0;
+    height 40px;
+    z-index 2;
+    pointer-events none;
+  }
+  .reel-containerbefore {
+    top 0;
+    background linear-gradient(to bottom, #0d0d14, transparent);
+  }
+  .reel-containerafter {
+    bottom 0;
+    background linear-gradient(to top, #0d0d14, transparent);
+  }
+
+   スピン中のグロー 
+  .reel-container.spinning {
+    border-color var(--gold);
+    box-shadow inset 0 4px 20px rgba(0,0,0,0.5), 0 0 20px rgba(245,200,66,0.2);
+  }
+
+  .reel {
+    display flex;
+    flex-direction column;
+    transition transform 0.08s linear;
+    will-change transform;
+  }
+
+  .reel-item {
+    width var(--reel-w);
+    height var(--reel-h);
+    flex-shrink 0;
+    display flex;
+    align-items center;
+    justify-content center;
+    padding 12px;
+  }
+
+  .reel-item img {
+    width 100%;
+    height 100%;
+    object-fit contain;
+    border-radius 8px;
+    pointer-events none;
+    user-select none;
+  }
+
+   当たりエフェクト 
+  .reel-container.matched {
+    border-color var(--gold);
+    animation pulse-border 0.6s ease-in-out infinite alternate;
+  }
+
+  @keyframes pulse-border {
+    from { box-shadow inset 0 4px 20px rgba(0,0,0,0.5), 0 0 10px rgba(245,200,66,0.3); }
+    to   { box-shadow inset 0 4px 20px rgba(0,0,0,0.5), 0 0 30px rgba(245,200,66,0.7); }
+  }
+
+   ベット設定 
+  .bet-row {
+    display flex;
+    align-items center;
+    justify-content center;
+    gap 12px;
+    margin-bottom 20px;
+  }
+
+  .bet-label {
+    font-size 0.7rem;
+    letter-spacing 0.2em;
+    color var(--dim);
+    text-transform uppercase;
+  }
+
+  .bet-btn {
+    width 32px; height 32px;
+    border-radius 6px;
+    border 1px solid var(--border);
+    background transparent;
+    color var(--text);
+    font-size 1.1rem;
+    cursor pointer;
+    transition all 0.15s;
+    display flex; align-items center; justify-content center;
+  }
+  .bet-btnhover { border-color var(--gold); color var(--gold); }
+
+  .bet-value {
+    font-family 'Bebas Neue', cursive;
+    font-size 1.6rem;
+    color var(--gold);
+    min-width 60px;
+    text-align center;
+    letter-spacing 0.05em;
+  }
+
+   スピンボタン 
+  .spin-btn {
+    width 100%;
+    padding 16px;
+    font-family 'Bebas Neue', cursive;
+    font-size 1.8rem;
+    letter-spacing 0.2em;
+    border none;
+    border-radius 12px;
+    background linear-gradient(135deg, var(--gold2), var(--gold), var(--gold2));
+    color #0a0a0f;
+    cursor pointer;
+    transition all 0.15s;
+    position relative;
+    overflow hidden;
+  }
+
+  .spin-btnbefore {
+    content '';
+    position absolute;
+    inset 0;
+    background linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.15) 50%, transparent 60%);
+    transform translateX(-100%);
+    transition transform 0.4s;
+  }
+
+  .spin-btnhoverbefore { transform translateX(100%); }
+  .spin-btnhover { filter brightness(1.1); transform translateY(-1px); box-shadow 0 8px 24px rgba(245,200,66,0.3); }
+  .spin-btnactive { transform translateY(0); }
+  .spin-btndisabled { background var(--border); color var(--dim); cursor not-allowed; filter none; transform none; box-shadow none; }
+
+   結果メッセージ 
+  .result-msg {
+    text-align center;
+    margin-top 20px;
+    min-height 36px;
+    font-family 'Bebas Neue', cursive;
+    font-size 1.6rem;
+    letter-spacing 0.15em;
+    transition all 0.3s;
+  }
+
+  .result-msg.win  { color var(--green); filter drop-shadow(0 0 10px rgba(57,255,138,0.5)); }
+  .result-msg.lose { color var(--dim); }
+  .result-msg.jackpot {
+    color var(--gold);
+    filter drop-shadow(0 0 20px rgba(245,200,66,0.8));
+    animation jackpot-flash 0.4s ease-in-out infinite alternate;
+  }
+
+  @keyframes jackpot-flash {
+    from { filter drop-shadow(0 0 10px rgba(245,200,66,0.5)); }
+    to   { filter drop-shadow(0 0 30px rgba(245,200,66,1)); }
+  }
+
+   紙吹雪 
+  .confetti-wrap {
+    position fixed;
+    inset 0;
+    pointer-events none;
+    z-index 100;
+    overflow hidden;
+  }
+
+  .confetti-piece {
+    position absolute;
+    top -20px;
+    width 10px; height 10px;
+    border-radius 2px;
+    animation confetti-fall linear forwards;
+  }
+
+  @keyframes confetti-fall {
+    to { transform translateY(110vh) rotate(720deg); opacity 0; }
+  }
+
+   設定ボタン 
+  .config-area {
+    margin-top 20px;
+    text-align center;
+  }
+
+  .config-btn {
+    font-size 0.7rem;
+    letter-spacing 0.2em;
+    color var(--dim);
+    background none;
+    border none;
+    cursor pointer;
+    text-decoration underline;
+    text-underline-offset 3px;
+    transition color 0.15s;
+  }
+  .config-btnhover { color var(--text); }
+
+   モーダル 
+  .modal-overlay {
+    display none;
+    position fixed;
+    inset 0;
+    background rgba(0,0,0,0.7);
+    z-index 200;
+    align-items center;
+    justify-content center;
+  }
+  .modal-overlay.open { display flex; }
+
+  .modal {
+    background var(--panel);
+    border 1px solid var(--border);
+    border-radius 16px;
+    padding 28px;
+    width min(480px, 90vw);
+    box-shadow 0 20px 60px rgba(0,0,0,0.8);
+  }
+
+  .modal h2 {
+    font-family 'Bebas Neue', cursive;
+    font-size 1.6rem;
+    letter-spacing 0.15em;
+    color var(--gold);
+    margin-bottom 16px;
+  }
+
+  .modal label {
+    display block;
+    font-size 0.75rem;
+    letter-spacing 0.15em;
+    color var(--dim);
+    text-transform uppercase;
+    margin-bottom 6px;
+  }
+
+  .modal input {
+    width 100%;
+    padding 10px 14px;
+    background #0d0d14;
+    border 1px solid var(--border);
+    border-radius 8px;
+    color var(--text);
+    font-size 0.85rem;
+    margin-bottom 16px;
+    outline none;
+    transition border-color 0.15s;
+  }
+  .modal inputfocus { border-color var(--gold); }
+
+  .modal-btns {
+    display flex;
+    gap 10px;
+    justify-content flex-end;
+  }
+
+  .modal-btns button {
+    padding 10px 24px;
+    border-radius 8px;
+    border none;
+    cursor pointer;
+    font-family 'Bebas Neue', cursive;
+    font-size 1rem;
+    letter-spacing 0.1em;
+    transition all 0.15s;
+  }
+
+  .btn-cancel { background var(--border); color var(--dim); }
+  .btn-cancelhover { color var(--text); }
+  .btn-save { background var(--gold); color #0a0a0f; }
+  .btn-savehover { filter brightness(1.1); }
+
+   レスポンシブ 
+  @media (max-width 560px) {
+    root { --reel-w 100px; --reel-h 100px; }
+    .machine { padding 20px; }
+    .reels { gap 8px; }
+  }
+style
+head
+body
+
+h1ROBAKUJI SLOTh1
+p class=subtitleTry your luckp
+
+div class=coins-bar
+  span class=coins-labelCOINSspan
+  span class=coins-value id=coinsDisplay100span
+  span class=coins-label style=margin-left8pxBETspan
+  span class=coins-value id=betDisplay style=min-width50px10span
+div
+
+div class=machine
+  div class=reels id=reels
+    div class=win-line id=winLinediv
+    div class=reel-container id=rc0div class=reel id=reel0divdiv
+    div class=reel-container id=rc1div class=reel id=reel1divdiv
+    div class=reel-container id=rc2div class=reel id=reel2divdiv
+  div
+
+  div class=bet-row
+    span class=bet-labelBETspan
+    button class=bet-btn id=betMinus−button
+    span class=bet-value id=betVal10span
+    button class=bet-btn id=betPlus＋button
+  div
+
+  button class=spin-btn id=spinBtnSPINbutton
+
+  div class=result-msg id=resultMsgdiv
+div
+
+div class=config-area
+  button class=config-btn id=configBtn⚙ 画像URLを設定button
+div
+
+div class=confetti-wrap id=confettiWrapdiv
+
+!-- 設定モーダル --
+div class=modal-overlay id=modalOverlay
+  div class=modal
+    h2画像設定h2
+    labelGitHub Raw ベースURL（末尾スラッシュなし）label
+    input type=text id=baseUrlInput placeholder=httpsraw.githubusercontent.comuserrepomainrobakuji
+    label画像枚数（1〜26）label
+    input type=number id=countInput min=1 max=26 value=26
+    div class=modal-btns
+      button class=btn-cancel id=cancelBtnキャンセルbutton
+      button class=btn-save id=saveBtn保存button
+    div
+  div
+div
+
+script
+ ── 設定 ──────────────────────────────────────────────────
+const LS_KEY_URL   = 'robakuji_base_url';
+const LS_KEY_COUNT = 'robakuji_count';
+const BET_STEP     = 10;
+const BET_MIN      = 10;
+const BET_MAX      = 500;
+
+ ペイテーブル
+const PAYOUTS = {
+  jackpot 10,    3つ全部同じ → BET × 10
+  pair    2,     2つ同じ    → BET × 2
+  lose    0,
+};
+
+ ── 状態 ──────────────────────────────────────────────────
+let baseUrl   = localStorage.getItem(LS_KEY_URL)    '';
+let imgCount  = parseInt(localStorage.getItem(LS_KEY_COUNT)  '26');
+let coins     = 100;
+let bet       = 10;
+let spinning  = false;
+let images    = [];    URLの配列
+
+ ── DOM ───────────────────────────────────────────────────
+const coinsDisplay = document.getElementById('coinsDisplay');
+const betDisplay   = document.getElementById('betDisplay');
+const betVal       = document.getElementById('betVal');
+const spinBtn      = document.getElementById('spinBtn');
+const resultMsg    = document.getElementById('resultMsg');
+const winLine      = document.getElementById('winLine');
+const confettiWrap = document.getElementById('confettiWrap');
+const modalOverlay = document.getElementById('modalOverlay');
+const baseUrlInput = document.getElementById('baseUrlInput');
+const countInput   = document.getElementById('countInput');
+
+ ── 初期化 ─────────────────────────────────────────────────
+function buildImages() {
+  images = [];
+  for (let i = 1; i = imgCount; i++) {
+    images.push(baseUrl  `${baseUrl}${i}.png`  null);
+  }
+}
+
+function buildReels() {
+  for (let r = 0; r  3; r++) {
+    const reel = document.getElementById(`reel${r}`);
+    reel.innerHTML = '';
+     表示用にシャッフルして複数枚並べる（スクロール用に多めに）
+    const pool = [...images, ...images, ...images];
+    shuffle(pool);
+    pool.forEach(url = {
+      const item = document.createElement('div');
+      item.className = 'reel-item';
+      const img = document.createElement('img');
+      img.src = url  '';
+      img.alt = '';
+      img.onerror = () = { img.style.opacity = '0.2'; };
+      item.appendChild(img);
+      reel.appendChild(item);
+    });
+  }
+}
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i  0; i--) {
+    const j = Math.floor(Math.random()  (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function updateCoins() {
+  coinsDisplay.textContent = coins;
+}
+
+function updateBet() {
+  betVal.textContent = bet;
+  betDisplay.textContent = bet;
+}
+
+ ── スピン ─────────────────────────────────────────────────
+const ITEM_H = () = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--reel-h'));
+
+async function spin() {
+  if (spinning) return;
+  if (coins  bet) {
+    showResult('COINS不足！', 'lose');
+    return;
+  }
+
+  spinning = true;
+  spinBtn.disabled = true;
+  coins -= bet;
+  updateCoins();
+  coinsDisplay.classList.remove('win', 'lose');
+
+  winLine.classList.remove('show');
+  resultMsg.className = 'result-msg';
+  resultMsg.textContent = '';
+  [0,1,2].forEach(i = {
+    document.getElementById(`rc${i}`).classList.remove('matched', 'spinning');
+  });
+
+   各リールの停止インデックスをランダムに決定
+  const stops = [
+    Math.floor(Math.random()  imgCount),
+    Math.floor(Math.random()  imgCount),
+    Math.floor(Math.random()  imgCount),
+  ];
+
+  const h = ITEM_H();
+  const delays = [0, 400, 800];
+  const durations = [1800, 2200, 2600];
+
+  const promises = [0,1,2].map(r = spinReel(r, stops[r], delays[r], durations[r], h));
+  await Promise.all(promises);
+
+   結果判定
+  judge(stops);
+  spinning = false;
+  spinBtn.disabled = false;
+}
+
+function spinReel(r, stopIdx, delay, duration, h) {
+  return new Promise(resolve = {
+    setTimeout(() = {
+      const rc   = document.getElementById(`rc${r}`);
+      const reel = document.getElementById(`reel${r}`);
+      rc.classList.add('spinning');
+
+      const items      = reel.children;
+      const totalItems = items.length;
+      const targetY    = stopIdx  h;
+
+       高速スクロールアニメーション
+      let start = null;
+      const totalDist = totalItems  h  2 + targetY;
+
+      function animate(ts) {
+        if (!start) start = ts;
+        const elapsed = ts - start;
+        const progress = Math.min(elapsed  duration, 1);
+
+         イージング（最初速く、最後ゆっくり）
+        const ease = 1 - Math.pow(1 - progress, 4);
+        const y = (ease  totalDist) % (totalItems  h);
+
+        reel.style.transform = `translateY(-${y}px)`;
+
+        if (progress  1) {
+          requestAnimationFrame(animate);
+        } else {
+           最終位置にスナップ
+          reel.style.transform = `translateY(-${targetY}px)`;
+          rc.classList.remove('spinning');
+          resolve();
+        }
+      }
+
+      requestAnimationFrame(animate);
+    }, delay);
+  });
+}
+
+function judge(stops) {
+  const s0 = stops[0], s1 = stops[1], s2 = stops[2];
+  let type, payout;
+
+  if (s0 === s1 && s1 === s2) {
+    type = 'jackpot';
+    payout = bet  PAYOUTS.jackpot;
+  } else if (s0 === s1  s1 === s2  s0 === s2) {
+    type = 'pair';
+    payout = bet  PAYOUTS.pair;
+  } else {
+    type = 'lose';
+    payout = 0;
+  }
+
+  coins += payout;
+  updateCoins();
+
+  if (type === 'jackpot') {
+    [0,1,2].forEach(i = document.getElementById(`rc${i}`).classList.add('matched'));
+    winLine.classList.add('show');
+    showResult(`JACKPOT！  +${payout} COINS`, 'jackpot');
+    launchConfetti();
+    coinsDisplay.classList.add('win');
+  } else if (type === 'pair') {
+     どのリールが揃ったか
+    if (s0 === s1) { document.getElementById('rc0').classList.add('matched'); document.getElementById('rc1').classList.add('matched'); }
+    if (s1 === s2) { document.getElementById('rc1').classList.add('matched'); document.getElementById('rc2').classList.add('matched'); }
+    if (s0 === s2) { document.getElementById('rc0').classList.add('matched'); document.getElementById('rc2').classList.add('matched'); }
+    winLine.classList.add('show');
+    showResult(`PAIR！  +${payout} COINS`, 'win');
+    coinsDisplay.classList.add('win');
+  } else {
+    showResult('MISS...', 'lose');
+    coinsDisplay.classList.add('lose');
+  }
+
+   コインがなくなったらリセット
+  if (coins = 0) {
+    setTimeout(() = {
+      coins = 100;
+      updateCoins();
+      showResult('GAME OVER — COINS RESET', 'lose');
+    }, 2000);
+  }
+}
+
+function showResult(msg, cls) {
+  resultMsg.className = `result-msg ${cls}`;
+  resultMsg.textContent = msg;
+}
+
+ ── 紙吹雪 ─────────────────────────────────────────────────
+function launchConfetti() {
+  confettiWrap.innerHTML = '';
+  const colors = ['#f5c842','#ff3a3a','#39ff8a','#3af0ff','#ff8aef','#ffffff'];
+  for (let i = 0; i  80; i++) {
+    const el = document.createElement('div');
+    el.className = 'confetti-piece';
+    el.style.left = Math.random()  100 + 'vw';
+    el.style.background = colors[Math.floor(Math.random()  colors.length)];
+    el.style.width  = (8 + Math.random()  8) + 'px';
+    el.style.height = (8 + Math.random()  8) + 'px';
+    el.style.borderRadius = Math.random()  0.5  '50%'  '2px';
+    el.style.animationDuration = (1.5 + Math.random()  2) + 's';
+    el.style.animationDelay = (Math.random()  0.8) + 's';
+    confettiWrap.appendChild(el);
+  }
+  setTimeout(() = { confettiWrap.innerHTML = ''; }, 4000);
+}
+
+ ── BETボタン ──────────────────────────────────────────────
+document.getElementById('betMinus').addEventListener('click', () = {
+  bet = Math.max(BET_MIN, bet - BET_STEP);
+  updateBet();
+});
+document.getElementById('betPlus').addEventListener('click', () = {
+  bet = Math.min(BET_MAX, bet + BET_STEP);
+  updateBet();
+});
+
+ ── SPINボタン ─────────────────────────────────────────────
+spinBtn.addEventListener('click', spin);
+
+ スペースキーでもスピン
+document.addEventListener('keydown', e = {
+  if (e.code === 'Space' && !spinning) { e.preventDefault(); spin(); }
+});
+
+ ── 設定モーダル ───────────────────────────────────────────
+document.getElementById('configBtn').addEventListener('click', () = {
+  baseUrlInput.value = baseUrl;
+  countInput.value   = imgCount;
+  modalOverlay.classList.add('open');
+});
+
+document.getElementById('cancelBtn').addEventListener('click', () = {
+  modalOverlay.classList.remove('open');
+});
+
+document.getElementById('saveBtn').addEventListener('click', () = {
+  baseUrl  = baseUrlInput.value.trim().replace($, '');
+  imgCount = Math.min(26, Math.max(1, parseInt(countInput.value)  26));
+  localStorage.setItem(LS_KEY_URL,   baseUrl);
+  localStorage.setItem(LS_KEY_COUNT, imgCount);
+  buildImages();
+  buildReels();
+  modalOverlay.classList.remove('open');
+});
+
+ モーダル外クリックで閉じる
+modalOverlay.addEventListener('click', e = {
+  if (e.target === modalOverlay) modalOverlay.classList.remove('open');
+});
+
+ ── 起動 ──────────────────────────────────────────────────
+buildImages();
+buildReels();
+updateCoins();
+updateBet();
+script
+body
+html
